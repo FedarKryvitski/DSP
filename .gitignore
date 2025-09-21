@@ -43,3 +43,6 @@
 
 # Media files
 *.wav
+
+# Build files
+*/build/*

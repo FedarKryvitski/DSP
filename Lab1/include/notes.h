@@ -22,7 +22,7 @@ enum class Note : int {
 
 template<Note note, int octave>
 struct NoteFrequency {
-    static constexpr float value() {
+    static float value() {
         constexpr float A4{440.f};
         constexpr int semitones_from_A4 =
             static_cast<int>(note) - static_cast<int>(Note::A) + 12 * (octave - 4);
@@ -30,18 +30,18 @@ struct NoteFrequency {
     }
 };
 
-template<int octave> constexpr float C = NoteFrequency<Note::C, octave>::value();
-template<int octave> constexpr float Cs = NoteFrequency<Note::Cs, octave>::value();
-template<int octave> constexpr float D = NoteFrequency<Note::D, octave>::value();
-template<int octave> constexpr float Ds = NoteFrequency<Note::Ds, octave>::value();
-template<int octave> constexpr float E = NoteFrequency<Note::E, octave>::value();
-template<int octave> constexpr float F = NoteFrequency<Note::F, octave>::value();
-template<int octave> constexpr float Fs = NoteFrequency<Note::Fs, octave>::value();
-template<int octave> constexpr float G = NoteFrequency<Note::G, octave>::value();
-template<int octave> constexpr float Gs = NoteFrequency<Note::Gs, octave>::value();
-template<int octave> constexpr float A = NoteFrequency<Note::A, octave>::value();
-template<int octave> constexpr float As = NoteFrequency<Note::As, octave>::value();
-template<int octave> constexpr float B = NoteFrequency<Note::B, octave>::value();
+template<int octave> float C = NoteFrequency<Note::C, octave>::value();
+template<int octave> float Cs = NoteFrequency<Note::Cs, octave>::value();
+template<int octave> float D = NoteFrequency<Note::D, octave>::value();
+template<int octave> float Ds = NoteFrequency<Note::Ds, octave>::value();
+template<int octave> float E = NoteFrequency<Note::E, octave>::value();
+template<int octave> float F = NoteFrequency<Note::F, octave>::value();
+template<int octave> float Fs = NoteFrequency<Note::Fs, octave>::value();
+template<int octave> float G = NoteFrequency<Note::G, octave>::value();
+template<int octave> float Gs = NoteFrequency<Note::Gs, octave>::value();
+template<int octave> float A = NoteFrequency<Note::A, octave>::value();
+template<int octave> float As = NoteFrequency<Note::As, octave>::value();
+template<int octave> float B = NoteFrequency<Note::B, octave>::value();
 
 } // namespace Notes
 

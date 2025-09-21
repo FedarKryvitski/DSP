@@ -101,8 +101,8 @@ namespace SoundGenerator {
                 constexpr float modulationFrequency{ 1.f };
                 constexpr float frequencyModulationAmplitude{ 30.f };
 
-                const float integratedFrequency = frequencyModulationAmplitude * std::cos(2.f * PI * modulationFrequency * currentPhase);
-                const float soundValue = std::sin(2.f * PI * currentPhase * frequency + integratedFrequency);
+                const float integratedFrequency = static_cast<float>(frequencyModulationAmplitude * std::cos(2.f * PI * modulationFrequency * currentPhase));
+                const float soundValue = static_cast<float>(std::sin(2.f * PI * currentPhase * frequency + integratedFrequency));
 
                 return amplitude * soundValue;
             }

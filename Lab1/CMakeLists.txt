@@ -12,18 +12,22 @@ set(INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-file(GLOB_RECURSE SOURCE_FILES
-    "src/*"
-)
-
 add_executable(${PROJECT_NAME}
-    ${SOURCE_FILES}
+    src/main.cpp
+    src/wav_file.cpp
+    src/track.cpp
+    src/sound_generator.cpp
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(STATUS "Building for Linux - ALSA support enabled")
     find_package(ALSA REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE ALSA::ALSA)
+
+    target_sources(${PROJECT_NAME} PRIVATE
+        src/audio_player.cpp
+    )
+    
     target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_BUILD)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -41,5 +45,3 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 endif()
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})

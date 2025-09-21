@@ -63,10 +63,10 @@ bool WavFile::save(const std::string& filename) const
     std::memcpy(header.fmt, "fmt ", 4);
     header.subchunk1_size = 16;
     header.audio_format = PCM_FORMAT;
-    header.num_channels = m_channels;
+    header.num_channels = static_cast<uint16_t>(m_channels);
     header.sample_rate = m_sampleRate;
     header.byte_rate = m_sampleRate * m_channels * sizeof(int16_t);
-    header.block_align = m_channels * sizeof(int16_t);
+    header.block_align = static_cast<uint16_t>(m_channels * sizeof(int16_t));
     header.bits_per_sample = BITS_PER_SAMPLE;
     std::memcpy(header.data, "data", 4);
     header.data_size = data_length;
