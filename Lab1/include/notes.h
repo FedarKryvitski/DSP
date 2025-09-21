@@ -25,7 +25,7 @@ struct NoteFrequency {
     static constexpr float value() {
         constexpr float A4{440.f};
         constexpr int semitones_from_A4 =
-            (static_cast<int>(note) - static_cast<int>(Note::A)) + 12 * (octave - 4);
+            static_cast<int>(note) - static_cast<int>(Note::A) + 12 * (octave - 4);
         return A4 * std::pow(2.0f, semitones_from_A4 / 12.0f);
     }
 };

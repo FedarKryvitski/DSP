@@ -8,6 +8,7 @@ class Track {
 public:
     explicit Track(unsigned int channels) noexcept;
 
+    void clear();
     void insert(std::span<const float> data, size_t pos = 0);
     void normalize();
 

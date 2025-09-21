@@ -2,11 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <random>
-#include <bits/ostream.tcc>
+#include <numbers>
+
+namespace {
+    constexpr auto PI = std::numbers::pi;
+}
 
 namespace SoundGenerator {
 
@@ -16,7 +19,7 @@ namespace SoundGenerator {
     {}
 
     float Generator::getSinValue(float frequency, float phase) {
-        const auto value = static_cast<float>(std::sin(2 * M_PI * frequency * phase));
+        const auto value = static_cast<float>(std::sin(2 * PI * frequency * phase));
         return value;
     }
 
@@ -44,7 +47,24 @@ namespace SoundGenerator {
         return distribution(generator);
     }
 
-    std::vector<float> Generator::getSound(float amplitude, float frequency, int sampleIndex, float phase) const {
+    float Generator::getSoundValue(WaveType waveType, float frequency, float phase) {
+        switch (waveType) {
+            case WaveType::SINUSOID:
+                return getSinValue(frequency, phase);
+            case WaveType::SAWTOOTH:
+                return getSawValue(frequency, phase);
+            case WaveType::TRIANGLE:
+                return getTriangleValue(frequency, phase);
+            case WaveType::IMPULSE:
+                return getSquareValue(frequency, phase);
+            case WaveType::NOISE:
+                return getRandValue();
+            default:
+                return 0.f;
+        }
+    }
+
+    std::vector<float> Generator::getSound(WaveType waveType, float amplitude, float frequency, int sampleIndex, float phase) const {
         std::vector<float> result(m_bufferSamples * m_channels);
 
         std::ranges::generate(result, [&, i=0]() mutable -> float {
@@ -52,85 +72,41 @@ namespace SoundGenerator {
                 sampleIndex++;
 
             float currentPhase{ phase + static_cast<float>(sampleIndex) / static_cast<float>(m_sampleRate) };
-            float multiplier{0.f};
+            float soundValue = getSoundValue(waveType, frequency, currentPhase);
 
-            switch (m_type) {
-                case WaveType::SINUSOID:
-                    multiplier = getSinValue(frequency, currentPhase);
-                    break;
-                case WaveType::SAWTOOTH:
-                    multiplier = getSawValue(frequency, currentPhase);
-                    break;
-                case WaveType::TRIANGLE:
-                    multiplier = getTriangleValue(frequency, currentPhase);
-                    break;
-                case WaveType::IMPULSE:
-                    multiplier = getSquareValue(frequency, currentPhase);
-                    break;
-                case WaveType::NOISE:
-                    multiplier = getRandValue();
-                    break;
-                default:
-                    break;
-            }
-
-            return amplitude * multiplier;
+            return amplitude * soundValue;
         });
 
         return result;
     }
 
-    std::vector<float> Generator::getModulationSound(ModulationType modulation, float amplitude, float frequency, int sampleIndex, float phase) const {
+    std::vector<float> Generator::getModulationSound(ModulationType modulationType, WaveType waveType, float amplitude, float frequency, int sampleIndex, float phase) const {
         std::vector<float> result(m_bufferSamples * m_channels);
-        float integratedPhase = phase;
-
         std::ranges::generate(result, [&, i=0]() mutable -> float {
             if (i++ % m_channels == 0)
                 sampleIndex++;
 
-            const float currentTime = phase + static_cast<float>(sampleIndex) / static_cast<float>(m_sampleRate);
+            const float currentPhase{ phase + static_cast<float>(sampleIndex) / static_cast<float>(m_sampleRate) };
 
-            float multiplier{0.f};
-            float currentAmplitude{ amplitude };
+            if (modulationType == ModulationType::AMPLITUDE) {
+                constexpr float amplitudeModulationFrequency{ 1.f };
 
-            switch (modulation) {
-                case ModulationType::AMPLITUDE:
-                    currentAmplitude = amplitude * getSawValue(1.f, currentTime) * 2.f;
-                    break;
-                case ModulationType::FREQUENCY:
-                {
-                    constexpr float modulationFrequency{ 2.f };
-                    constexpr float b{ 2.f };
+                const float amplitudeMultiplier = getSinValue(amplitudeModulationFrequency, currentPhase);
+                const float currentAmplitude = amplitude * amplitudeMultiplier;
+                const float soundValue = getSoundValue(waveType, frequency, currentPhase);
 
-                    const float frequencyDiff = b * std::sin(2.f * M_PI * modulationFrequency * currentTime);
-                    const float fmSignal = amplitude * std::sin(2.f * M_PI * currentTime * (frequency + frequencyDiff));
-                    return fmSignal;
-                }
-                default:
-                    break;
+                return currentAmplitude * soundValue;
             }
+            if (modulationType == ModulationType::FREQUENCY) {
+                constexpr float modulationFrequency{ 1.f };
+                constexpr float frequencyModulationAmplitude{ 30.f };
 
-            switch (m_type) {
-                case WaveType::SINUSOID:
-                    multiplier = getSinValue(frequency, currentTime);
-                    break;
-                case WaveType::SAWTOOTH:
-                    multiplier = getSawValue(frequency, currentTime);
-                    break;
-                case WaveType::TRIANGLE:
-                    multiplier = getTriangleValue(frequency, currentTime);
-                    break;
-                case WaveType::IMPULSE:
-                    multiplier = getSquareValue(frequency, currentTime);
-                    break;
-                case WaveType::NOISE:
-                    multiplier = getRandValue();
-                    break;
-                default:
-                    break;
+                const float integratedFrequency = frequencyModulationAmplitude * std::cos(2.f * PI * modulationFrequency * currentPhase);
+                const float soundValue = std::sin(2.f * PI * currentPhase * frequency + integratedFrequency);
+
+                return amplitude * soundValue;
             }
-
-            return currentAmplitude * multiplier;
+            return 0.f;
         });
 
         return result;

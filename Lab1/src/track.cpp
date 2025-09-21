@@ -6,9 +6,11 @@ Track::Track(unsigned int channels) noexcept
 : m_channels(channels)
 {}
 
+void Track::clear() {
+    m_buffer.clear();
+}
 
 void Track::insert(std::span<const float> data, const size_t pos) {
-
     if (const size_t newSize = pos * m_channels + data.size(); newSize > m_buffer.size()) {
         m_buffer.resize(newSize);
     }
