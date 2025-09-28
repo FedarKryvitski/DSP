@@ -42,6 +42,17 @@ void WavFile::append(const std::span<const float>& data) {
     });
 }
 
+std::vector<float> WavFile::data() const {
+    constexpr float divider{ 32767.f };
+
+    std::vector<float> data(m_buffer.size());
+    std::ranges::transform(m_buffer, data.begin(), [](const auto& sample) {
+        return static_cast<float>(sample) / divider;
+    });
+
+    return data;
+}
+
 bool WavFile::save(const std::string& filename) const
 {
     std::ofstream file(filename, std::ios::out | std::ios::binary);
@@ -73,6 +84,22 @@ bool WavFile::save(const std::string& filename) const
 
     file.write(reinterpret_cast<const char *>(&header), sizeof(decltype(header)));
     file.write(reinterpret_cast<const char *>(m_buffer.data()), data_length);
+
+    return true;
+}
+
+bool WavFile::load(const std::string& filename) {
+    std::ifstream file(filename, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file " << filename << std::endl;
+        return false;
+    }
+
+    WavHeader header{};
+    file.read(reinterpret_cast<char*>(&header), sizeof(header));
+
+    m_buffer.resize(header.data_size / sizeof(int16_t));
+    file.read(reinterpret_cast<char*>(m_buffer.data()), header.data_size);
 
     return true;
 }

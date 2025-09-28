@@ -8,13 +8,15 @@
 
 class WavFile {
 public:
-    explicit WavFile(unsigned int sampleRate = 44100, unsigned int channels = 2) noexcept;
+    explicit WavFile(unsigned int sampleRate = 48000, unsigned int channels = 2) noexcept;
     virtual ~WavFile() = default;
 
     void clear();
     void append(const std::span<const float>& data);
+    [[nodiscard]] std::vector<float> data() const;
 
     [[nodiscard]] bool save(const std::string& filename) const;
+    [[nodiscard]] bool load(const std::string& filename);
 
 private:
     std::vector<int16_t> m_buffer;

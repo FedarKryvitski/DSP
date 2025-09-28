@@ -44,6 +44,9 @@
 # Media files
 *.wav
 
+# Idea files
+.idea/
+
 # Build files
 */build/*
 
