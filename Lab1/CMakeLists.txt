@@ -5,39 +5,25 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-MESSAGE(STATUS "Build system: ${CMAKE_SYSTEM_NAME}")
-MESSAGE(STATUS "Build system version: ${CMAKE_SYSTEM_VERSION}")
+message(STATUS "Build system: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Build system version: ${CMAKE_SYSTEM_VERSION}")
 
 set(INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_executable(${PROJECT_NAME}
-    src/main.cpp
-    src/wav_file.cpp
-    src/track.cpp
-    src/sound_generator.cpp
+        src/main.cpp
+        src/track.cpp
+        src/sound_generator.cpp
 )
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    message(STATUS "Building for Linux - ALSA support enabled")
-    find_package(ALSA REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ALSA::ALSA)
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Plugins
+        ${CMAKE_CURRENT_BINARY_DIR}/Plugins/build
+)
 
-    target_sources(${PROJECT_NAME} PRIVATE
-        src/audio_player.cpp
-    )
-    
-    target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_BUILD)
-
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    message(STATUS "Building for Windows - ALSA support disabled")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE WINDOWS_BUILD)
-
-else()
-    message(WARNING "Building for unknown system: ${CMAKE_SYSTEM_NAME}")
-endif()
-
+target_link_libraries(${PROJECT_NAME} PRIVATE Plugins)
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIRS})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
