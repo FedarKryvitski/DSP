@@ -11,6 +11,7 @@ message(STATUS "Plugins system version: ${CMAKE_SYSTEM_VERSION}")
 add_library(${PROJECT_NAME} STATIC
         src/wav_file.cpp
         src/fourier.cpp
+        src/filter.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
