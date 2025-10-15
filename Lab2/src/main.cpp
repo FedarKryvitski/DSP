@@ -11,6 +11,9 @@ namespace {
     constexpr int kChannels{ 2 };
     constexpr int kOutputSize{ kSampleRate / 2 };
 
+    constexpr int kLowerBoundHz{400};
+    constexpr int kUpperBoundHz{1000};
+
     constexpr auto kInputFileName{"input.wav"};
     constexpr auto kOutputFileName{"output.wav"};
 }
@@ -39,28 +42,11 @@ int main() {
     const size_t N = complex_left.size();
     const auto freqs = fourier::fft_freqs(N);
 
+    complex_left = filter::filter(complex_left, freqs, kLowerBoundHz, kUpperBoundHz);
+    complex_right = filter::filter(complex_right, freqs, kLowerBoundHz, kUpperBoundHz);
 
-        //for (size_t i{}; i < N; ++i)
-        //{
-          //  fout << freqs[i] << " " << complex_left[i] << "  " << complex_right[i] << '\n';
-        //}
-
-		complex_left = filter::filter(complex_left, freqs, 10, 100);
-    	complex_right = filter::filter(complex_right, freqs, 10, 100);
-
-		const auto output_left = fourier::ifft(complex_left);
-    	const auto output_right = fourier::ifft(complex_right);
-	{
-        constexpr auto kOutputLogName = "log.txt";
-        std::ofstream fout(kOutputLogName);
-
-		for (size_t i{}; i < N; ++i)
-        {
-            fout << freqs[i] << " " << output_left[i] << "  " << output_right[i] << '\n';
-        }
-    }
-
-
+    const auto output_left = fourier::ifft(complex_left);
+    const auto output_right = fourier::ifft(complex_right);
 
     std::vector<float> output(2 * N, 0.0f);
     for (size_t i = 0; i < N; ++i){
