@@ -35,6 +35,7 @@ private:
 private:
     Ui::MainWindow *ui;
 
-    QString imagePath_;
+    QImage inputImage_;
+    QImage outputImage_;
 };
 #endif // MAINWINDOW_H

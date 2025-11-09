@@ -45,33 +45,36 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_selectImageButton_clicked()
 {
-    imagePath_ = QFileDialog::getOpenFileName(
+    QString imagePath = QFileDialog::getOpenFileName(
         nullptr,
         "Выберите изображение",
         "",
         "Изображения (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.webp)"
     );
 
-    if (imagePath_.isEmpty())
+    if (imagePath.isEmpty())
         return;
 
-    QImage image(imagePath_);
-    setImage(ui->inputImageLabel, image);
+    inputImage_ = QImage(imagePath);
+    outputImage_ = {};
+
+    setImage(ui->inputImageLabel, inputImage_);
     resetImage(ui->outputImageLabel);
 }
 
 void MainWindow::on_runButton_clicked()
 {
-    if (imagePath_.isEmpty())
-        return;
+    outputImage_ = {};
+    resetImage(ui->outputImageLabel);
 
-    QImage image(imagePath_);
+    if (inputImage_.isNull())
+        return;
 
     int operation = ui->methodComboBox->currentIndex();
     Method method = kMethods[operation];
 
-    QImage processedImage = utils::processImage(image, method);
-    setImage(ui->outputImageLabel, processedImage);
+    outputImage_ = utils::processImage(inputImage_, method);
+    setImage(ui->outputImageLabel, outputImage_);
 }
 
 void MainWindow::on_saveImageButton_clicked()
@@ -90,7 +93,7 @@ void MainWindow::on_saveImageButton_clicked()
     if (fileName.isEmpty())
         return;
 
-    pixmap.save(fileName);
+    outputImage_.save(fileName);
 }
 
 void MainWindow::setImage(QLabel* label, const QImage& image)
@@ -103,10 +106,12 @@ void MainWindow::setImage(QLabel* label, const QImage& image)
                                          Qt::KeepAspectRatio,
                                          Qt::SmoothTransformation);
     label->setPixmap(scaledPixmap);
+    QApplication::processEvents();
 }
 
 void MainWindow::resetImage(QLabel* label)
 {
     label->setPixmap(QPixmap{});
+    QApplication::processEvents();
 }
 

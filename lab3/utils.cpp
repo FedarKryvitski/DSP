@@ -8,10 +8,17 @@ namespace {
 
 constexpr double pi = std::numbers::pi;
 
+// for Box blur
+constexpr int kBoxBlurRadius = 10;
+
+// for Median
+constexpr int kMedianBlurRadius = 2;
+
 // for Gaussian
-constexpr int kKernelSize = 13;
+constexpr int kGaussianRadius = 5;
 constexpr double kSigma = 9;
 
+// for Sobel
 constexpr std::array<std::array<int, 3>, 3> sobelX = {{
     {-1, 0, 1},
     {-2, 0, 2},
@@ -70,12 +77,49 @@ std::vector<std::vector<double>> createGaussianKernel(int kernelSize, double sig
     return kernel;
 }
 
-QImage applyGaussian(const QImage& image)
+QImage applySobel(const QImage& image)
 {
-    constexpr int kernelSize = kKernelSize;
-    constexpr int kernelHalf = kKernelSize / 2;
+    QImage bufferedImage = toGrayscale(image);
+    QImage resultImage(bufferedImage);
 
-    auto kernel = createGaussianKernel(kKernelSize, kSigma);
+    const int width = bufferedImage.width();
+    const int height = bufferedImage.height();
+
+    for (int x = 1; x < width - 1; ++x)
+    {
+        for (int y = 1; y < height - 1; ++y)
+        {
+            int pixelX = 0;
+            int pixelY = 0;
+
+            for (int i = 0; i < 3; ++i)
+            {
+                for (int j = 0; j < 3; ++j)
+                {
+                    int curr_x = x + i - 1;
+                    int curr_y = y + j - 1;
+
+                    QRgb pixel = bufferedImage.pixel(curr_x, curr_y);
+
+                    int gray = qGray(pixel);
+                    pixelX += gray * sobelX[i][j];
+                    pixelY += gray * sobelY[i][j];
+                }
+            }
+
+            int magnitude = static_cast<int>(std::sqrt(pixelX * pixelX + pixelY * pixelY));
+
+            QRgb newPixel = qRgb(magnitude, magnitude, magnitude);
+            resultImage.setPixel(x, y, newPixel);
+        }
+    }
+
+    return resultImage;
+}
+
+QImage applyBoxBlur(const QImage& image)
+{
+    constexpr int radius = kBoxBlurRadius;
 
     const int width = image.width();
     const int height = image.height();
@@ -83,20 +127,121 @@ QImage applyGaussian(const QImage& image)
 
     QImage resultImage(width, height, format);
 
-    for (int y = 0; y < height; y++)
+    for (int x = 0; x < width; x++)
     {
-        for (int x = 0; x < width; x++)
+        for (int y = 0; y < height; y++)
+        {
+            int sumRed = 0;
+            int sumGreen = 0;
+            int sumBlue = 0;
+            int count = 0;
+
+            for (int curr_x = x - radius; curr_x <= x + radius; curr_x++)
+            {
+                for (int curr_y = y - radius; curr_y <= y + radius; curr_y++)
+                {
+                    if (0 <= curr_x && curr_x < width &&
+                        0 <= curr_y && curr_y < height)
+                    {
+                        const auto pixel = image.pixel(curr_x, curr_y);
+
+                        sumRed += qRed(pixel);
+                        sumGreen += qGreen(pixel);
+                        sumBlue += qBlue(pixel);
+                        count++;
+                    }
+                }
+            }
+
+            int red = sumRed / count;
+            int green = sumGreen / count;
+            int blue = sumBlue / count;
+
+            QRgb pixel = qRgb(red, green, blue);
+            resultImage.setPixel(x, y, pixel);
+        }
+    }
+
+    return resultImage;
+}
+
+QImage applyMedian(const QImage& image)
+{
+    constexpr int radius = kMedianBlurRadius;
+
+    const int width = image.width();
+    const int height = image.height();
+    const auto format = image.format();
+
+    QImage resultImage(width, height, format);
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            std::vector<QRgb> valuesRed;
+            std::vector<QRgb> valuesGreen;
+            std::vector<QRgb> valuesBlue;
+
+            for (int curr_x = x - radius; curr_x <= x + radius; curr_x++)
+            {
+                for (int curr_y = y - radius; curr_y <= y + radius; curr_y++)
+                {
+                    if (curr_x >= 0 && curr_x < width &&
+                        curr_y >= 0 && curr_y < height)
+                    {
+                        const auto pixel = image.pixel(curr_x, curr_y);
+
+                        valuesRed.push_back(qRed(pixel));
+                        valuesGreen.push_back(qGreen(pixel));
+                        valuesBlue.push_back(qBlue(pixel));
+                    }
+                }
+            }
+
+            std::ranges::sort(valuesRed);
+            std::ranges::sort(valuesGreen);
+            std::ranges::sort(valuesBlue);
+
+            auto red = valuesRed[valuesRed.size() / 2];
+            auto green = valuesGreen[valuesGreen.size() / 2];
+            auto blue = valuesBlue[valuesBlue.size() / 2];
+
+            const auto pixel = qRgb(red, green, blue);
+            resultImage.setPixel(x, y, pixel);
+        }
+    }
+
+    return resultImage;
+}
+
+QImage applyGaussian(const QImage& image)
+{
+    constexpr int radius = kGaussianRadius;
+    constexpr int kernelSize = radius * 2 + 1;
+
+    auto kernel = createGaussianKernel(kernelSize, kSigma);
+
+    const int width = image.width();
+    const int height = image.height();
+    const auto format = image.format();
+
+    QImage resultImage(width, height, format);
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
         {
             double sumR = 0;
             double sumG = 0;
             double sumB = 0;
 
-            for (int ky = 0; ky < kernelSize; ky++)
+            for (int kx = 0; kx < kernelSize; kx++)
             {
-                for (int kx = 0; kx < kernelSize; kx++)
+                for (int ky = 0; ky < kernelSize; ky++)
                 {
-                    int pixelX = x - kernelHalf + kx;
-                    int pixelY = y - kernelHalf + ky;
+                    int pixelX = x - radius + kx;
+                    int pixelY = y - radius + ky;
 
                     if (pixelX < 0)
                     {
@@ -139,7 +284,6 @@ QImage applyGaussian(const QImage& image)
 
 } // namespace
 
-QImage applySobel(const QImage& image);
 
 QImage processImage(const QImage& image, Method method)
 {
@@ -147,7 +291,7 @@ QImage processImage(const QImage& image, Method method)
     {
         case Method::BOX_BLUR:
         {
-            return {};
+            return applyBoxBlur(image);
         }
         case Method::GAUSS_BLUR:
         {
@@ -155,7 +299,7 @@ QImage processImage(const QImage& image, Method method)
         }
         case Method::MEDIAN_FILTER:
         {
-            return {};
+            return applyMedian(image);
         }
         case Method::SOBEL_OPERATOR:
         {
@@ -166,46 +310,6 @@ QImage processImage(const QImage& image, Method method)
     }
 
     return {};
-}
-
-QImage applySobel(const QImage& image)
-{
-    QImage buffered = toGrayscale(image);
-    QImage result(buffered);
-
-    const int width = buffered.width();
-    const int height = buffered.height();
-
-    for (int y = 1; y < height - 1; ++y)
-    {
-        for (int x = 1; x < width - 1; ++x)
-        {
-            int pixelX = 0;
-            int pixelY = 0;
-
-            for (int i = 0; i < 3; ++i)
-            {
-                for (int j = 0; j < 3; ++j)
-                {
-                    int curr_x = x + i - 1;
-                    int curr_y = y + j - 1;
-
-                    QRgb pixel = buffered.pixel(curr_x, curr_y);
-                    int gray = qGray(pixel);
-
-                    pixelX += gray * sobelX[i][j];
-                    pixelY += gray * sobelY[i][j];
-                }
-            }
-
-            int magnitude = static_cast<int>(std::sqrt(pixelX * pixelX + pixelY * pixelY));
-            QRgb newPixel = qRgb(magnitude, magnitude, magnitude);
-
-            result.setPixel(x, y, newPixel);
-        }
-    }
-
-    return result;
 }
 
 } // namespace utils
