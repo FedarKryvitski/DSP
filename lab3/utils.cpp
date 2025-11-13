@@ -79,18 +79,23 @@ std::vector<std::vector<double>> createGaussianKernel(int kernelSize, double sig
 
 QImage applySobel(const QImage& image)
 {
-    QImage bufferedImage = toGrayscale(image);
-    QImage resultImage(bufferedImage);
+    QImage resultImage(image);
 
-    const int width = bufferedImage.width();
-    const int height = bufferedImage.height();
+    const int width = image.width();
+    const int height = image.height();
 
     for (int x = 1; x < width - 1; ++x)
     {
         for (int y = 1; y < height - 1; ++y)
         {
-            int pixelX = 0;
-            int pixelY = 0;
+            int pixelX_r = 0;
+            int pixelY_r = 0;
+
+            int pixelX_g = 0;
+            int pixelY_g = 0;
+
+            int pixelX_b = 0;
+            int pixelY_b = 0;
 
             for (int i = 0; i < 3; ++i)
             {
@@ -99,17 +104,28 @@ QImage applySobel(const QImage& image)
                     int curr_x = x + i - 1;
                     int curr_y = y + j - 1;
 
-                    QRgb pixel = bufferedImage.pixel(curr_x, curr_y);
+                    QRgb pixel = image.pixel(curr_x, curr_y);
 
-                    int gray = qGray(pixel);
-                    pixelX += gray * sobelX[i][j];
-                    pixelY += gray * sobelY[i][j];
+                    int red = qRed(pixel);
+                    int green = qGreen(pixel);
+                    int blue = qBlue(pixel);
+
+                    pixelX_r += red * sobelX[i][j];
+                    pixelY_r += red * sobelY[i][j];
+
+                    pixelX_g += green * sobelX[i][j];
+                    pixelY_g += green * sobelY[i][j];
+
+                    pixelX_b += blue * sobelX[i][j];
+                    pixelY_b += blue * sobelY[i][j];
                 }
             }
 
-            int magnitude = static_cast<int>(std::sqrt(pixelX * pixelX + pixelY * pixelY));
+            int magnitude_r = static_cast<int>(std::sqrt(pixelX_r * pixelX_r + pixelY_r * pixelY_r));
+            int magnitude_g = static_cast<int>(std::sqrt(pixelX_g * pixelX_g + pixelY_g * pixelY_g));
+            int magnitude_b = static_cast<int>(std::sqrt(pixelX_b * pixelX_b + pixelY_b * pixelY_b));
 
-            QRgb newPixel = qRgb(magnitude, magnitude, magnitude);
+            QRgb newPixel = qRgb(magnitude_r, magnitude_g, magnitude_b);
             resultImage.setPixel(x, y, newPixel);
         }
     }
