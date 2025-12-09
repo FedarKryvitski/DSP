@@ -20,6 +20,21 @@ const std::unordered_map<Method, QString> kMethodNames = {{
    { Method::AUTO_CORRELATION, "Автокорреляция"}
 }};
 
+QImage loadImage()
+{
+    QString imagePath = QFileDialog::getOpenFileName(
+        nullptr,
+        "Выберите изображение",
+        "",
+        "Изображения (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.webp)"
+        );
+
+    if (imagePath.isEmpty())
+        return {};
+
+    return QImage(imagePath);
+}
+
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
@@ -65,44 +80,52 @@ void MainWindow::setCurrentMethod(Method method)
 
 void MainWindow::on_selectImageButton_clicked()
 {
-    QString imagePath = QFileDialog::getOpenFileName(
-        nullptr,
-        "Выберите изображение",
-        "",
-        "Изображения (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.webp)"
-    );
+    image_1_ = loadImage();
 
-    if (imagePath.isEmpty())
-        return;
+    setImage(ui->imageLabel_1, image_1_);
+    resetImage(ui->imageLabel_3);
+}
 
-    inputImage_ = QImage(imagePath);
-    outputImage_ = {};
+void MainWindow::on_selectImageButton_2_clicked()
+{
+    image_2_ = loadImage();
 
-    setImage(ui->inputImageLabel, inputImage_);
-    resetImage(ui->outputImageLabel);
+    setImage(ui->imageLabel_2, image_2_);
+    resetImage(ui->imageLabel_3);
 }
 
 void MainWindow::on_runButton_clicked()
 {
-    outputImage_ = {};
-    resetImage(ui->outputImageLabel);
+    resetImage(ui->imageLabel_3);
 
-    if (inputImage_.isNull())
+    if (image_1_.isNull())
+    {
+        qWarning() << "At least one of two images is null";
         return;
+    }
 
-    auto format = inputImage_.format();
-    auto table = utils::DCT(inputImage_);
+    image_2_ = utils::subImage(image_1_);
+    setImage(ui->imageLabel_2, image_2_);
 
-    auto inputGrayscale = utils::toGrayscale(inputImage_);
-    outputImage_ = utils::fromTable(table, format);
-    outputImage_2_ = utils::IDCT(table, format);
+    auto correlationComplex = utils::correlationalTable(image_1_, image_2_);
+    auto correlationMagnitude = utils::magnitudeSpectrum(correlationComplex);
+    auto correlationImage = utils::fromTable(correlationMagnitude);
+    auto correlationHeatmap = utils::toHeatmap(correlationImage);
+    image_3_ = correlationHeatmap;
+    setImage(ui->imageLabel_3, image_3_);
 
-    setImage(ui->inputImageLabel, inputGrayscale);
-    setImage(ui->outputImageLabel, outputImage_);
-    setImage(ui->outputImageLabel_2, outputImage_2_);
+    auto peakPoint = utils::findMaxCorrelation(correlationComplex);
+    int dx = peakPoint.x() - (image_2_.width() - 1);
+    int dy = peakPoint.y() - (image_2_.height() - 1);
 
-    // auto temp = utils::addRectangle(inputImage_, QRect(100, 200, 50, 50));
-    // setImage(ui->inputImageLabel, temp);
+    // Ограничиваем координаты прямоугольника границами исходного изображения
+    dx = std::clamp(dx, 0, image_1_.width() - image_2_.width());
+    dy = std::clamp(dy, 0, image_1_.height() - image_2_.height());
+
+    auto rectPosition = QPoint{dx, dy};
+    auto rectSize = image_2_.size();
+    auto imageWithRect = utils::addRectangle(image_1_, QRect(rectPosition, rectSize));
+    setImage(ui->imageLabel_1, imageWithRect);
 }
 
 void MainWindow::on_methodComboBox_currentIndexChanged(int index)
@@ -112,8 +135,19 @@ void MainWindow::on_methodComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_clearButton_clicked()
 {
-    inputImage_ = {};
-    resetImage(ui->inputImageLabel);
+    image_1_ = {};
+    image_3_ = {};
+    resetImage(ui->imageLabel_1);
+    resetImage(ui->imageLabel_3);
+}
+
+
+void MainWindow::on_clearButton_2_clicked()
+{
+    image_2_ = {};
+    image_3_ = {};
+    resetImage(ui->imageLabel_2);
+    resetImage(ui->imageLabel_3);
 }
 
 /*
@@ -133,7 +167,7 @@ void MainWindow::on_saveImageButton_clicked()
     if (fileName.isEmpty())
         return;
 
-    outputImage_.save(fileName);
+    image_2_.save(fileName);
 }
 */
 

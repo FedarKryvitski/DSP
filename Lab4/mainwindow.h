@@ -30,6 +30,10 @@ private slots:
 
     void on_clearButton_clicked();
 
+    void on_selectImageButton_2_clicked();
+
+    void on_clearButton_2_clicked();
+
 private:
     void setCurrentMethod(Method method);
 
@@ -41,8 +45,8 @@ private:
     Ui::MainWindow *ui;
     Method currentMethod_{Method::CROSS_CORRELATION};
 
-    QImage inputImage_;
-    QImage outputImage_;
-    QImage outputImage_2_;
+    QImage image_1_;
+    QImage image_2_;
+    QImage image_3_;
 };
 #endif // MAINWINDOW_H
